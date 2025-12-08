@@ -1,0 +1,22 @@
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtualenv
+venv/
+.env/
+
+# Discord token
+bot_token.py
+
+# JS runtime for yt-dlp
+.js_runtime/
+
+# IDE / редактори
+.vscode/
+.idea/
+
+# Логи
+*.log
