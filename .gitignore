@@ -8,9 +8,6 @@ __pycache__/
 venv/
 .env/
 
-# Discord token
-bot_token.py
-
 # JS runtime for yt-dlp
 .js_runtime/
 
