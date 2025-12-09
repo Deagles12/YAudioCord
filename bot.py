@@ -313,6 +313,12 @@ class MusicBot(commands.Cog):
         else:
             await ctx.send("Зараз нічого не грає.")
 
+    @commands.hybrid_command(name="ping")
+    async def ping(self, ctx: commands.Context):
+        """Перевірка затримки бота."""
+        latency_ms = round(self.bot.latency * 1000)
+        await ctx.send(f"Pong! Latency: {latency_ms} ms")
+
 
 class MyBot(commands.Bot):
     async def setup_hook(self):
