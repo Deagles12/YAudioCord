@@ -11,15 +11,15 @@ try:
     import discord
     from discord.ext import commands
 except Exception as e:
-    print("Ошибка: пакет 'discord' не установлен или не может быть импортирован.")
-    print("Установите его командой: pip install -U discord.py")
+    print("❌ Помилка: пакет 'discord' не встановлено або не вдалося імпортувати.")
+    print("Встановіть його командою: pip install -U discord.py")
     raise SystemExit from e
 
 try:
     import yt_dlp
 except Exception as e:
-    print("Ошибка: пакет 'yt-dlp' не установлен или не может быть импортирован.")
-    print("Установите его командой: pip install -U yt-dlp")
+    print("❌ Помилка: пакет 'yt-dlp' не встановлено або не вдалося імпортувати.")
+    print("Встановіть його командою: pip install -U yt-dlp")
     raise SystemExit from e
 
 intents = discord.Intents.default()
@@ -27,14 +27,12 @@ intents.message_content = True
 intents.voice_states = True
 
 BOT_PREFIX = "!"
-# Пытаемся взять токен из отдельного файла bot_token.py, иначе из переменной окружения
 try:
     from bot_token import TOKEN as FILE_TOKEN
 except Exception:
     FILE_TOKEN = None
 
 TOKEN = FILE_TOKEN or os.environ.get("DISCORD_TOKEN")
-
 
 NODE_VERSION = "v22.11.0"
 NODE_FOLDER = f"node-{NODE_VERSION}-win-x64"
@@ -63,8 +61,8 @@ def _ensure_js_runtime() -> str:
     if runtime:
         return runtime
     raise RuntimeError(
-        "Не вдалося встановити Node.js автоматично. "
-        "Встановіть Node.js вручну або додайте в PATH існуючий JS-рушій."
+        "❌ Не вдалося встановити Node.js автоматично."
+        "Встановіть його вручну або додайте у PATH."
     )
 
 
@@ -118,9 +116,7 @@ def _locate_ffmpeg_executable() -> str:
             return exe_path
 
     raise RuntimeError(
-        "FFmpeg executable was not found. Install FFmpeg (https://ffmpeg.org/) "
-        "and ensure it is on the PATH, set the FFMPEG_PATH environment variable, "
-        "or install the imageio-ffmpeg Python package."
+        "Не знайдено FFmpeg. Встановіть FFmpeg і додайте його в PATH."
     )
 
 
@@ -210,8 +206,8 @@ class YTDLSource(discord.PCMVolumeTransformer):
 class MusicBot(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.queues = {}  # guild_id -> asyncio.Queue
-        self.current = {}  # guild_id -> YTDLSource
+        self.queues = {}
+        self.current = {}
         self.lock = asyncio.Lock()
 
     def get_queue(self, guild_id: int) -> asyncio.Queue:
@@ -244,7 +240,7 @@ class MusicBot(commands.Cog):
     @commands.hybrid_command(name="join")
     async def join(self, ctx: commands.Context):
         if ctx.author.voice is None or ctx.author.voice.channel is None:
-            await ctx.send("Спочатку зайди в голосовий канал.")
+            await ctx.send("🔊 Спочатку зайди у голосовий канал.")
             return
 
         channel = ctx.author.voice.channel
@@ -253,7 +249,7 @@ class MusicBot(commands.Cog):
         else:
             await channel.connect()
             asyncio.create_task(self.audio_player_task(ctx))
-        await ctx.send(f"Підключився до каналу {channel.name}")
+        await ctx.send(f"🎧 Приєднався до каналу **{channel.name}**")
 
     @commands.hybrid_command(name="play")
     async def play(self, ctx: commands.Context, *, url: str):
@@ -264,24 +260,24 @@ class MusicBot(commands.Cog):
             return
 
         async with self.lock:
-            msg = await ctx.send("Завантажую...")
+            msg = await ctx.send("⏳ Завантажую...")
             try:
                 source = await YTDLSource.create_source(url, loop=self.bot.loop)
             except Exception as e:
-                await msg.edit(content=f"Сталась помилка при обробці посилання: {e}")
+                await msg.edit(content=f"❌ Сталася помилка при обробці посилання:\n```{e}```")
                 return
 
             queue = self.get_queue(ctx.guild.id)
             await queue.put(source)
-            await msg.edit(content=f"Додав у чергу: **{source.title}**")
+            await msg.edit(content=f"🎶 Додав у чергу: **{source.title}**")
 
     @commands.hybrid_command(name="skip")
     async def skip(self, ctx: commands.Context):
         if ctx.voice_client is not None and ctx.voice_client.is_playing():
             ctx.voice_client.stop()
-            await ctx.send("Трек пропущено.")
+            await ctx.send("⏭️ Трек пропущено.")
         else:
-            await ctx.send("Зараз нічого не грає.")
+            await ctx.send("😕 Зараз нічого не грає.")
 
     @commands.hybrid_command(name="stop")
     async def stop(self, ctx: commands.Context):
@@ -293,42 +289,39 @@ class MusicBot(commands.Cog):
                 except asyncio.QueueEmpty:
                     break
             ctx.voice_client.stop()
-            await ctx.send("Зупинив відтворення і очистив чергу.")
+            await ctx.send("⛔ Відтворення зупинено і чергу очищено.")
         else:
-            await ctx.send("Бот не в голосовому каналі.")
+            await ctx.send("🤔 Я не в голосовому каналі.")
 
     @commands.hybrid_command(name="leave", aliases=["disconnect"])
     async def leave(self, ctx: commands.Context):
         if ctx.voice_client is not None:
             await ctx.voice_client.disconnect()
-            await ctx.send("Відключився від голосового каналу.")
+            await ctx.send("👋 Відключився від голосового каналу.")
         else:
-            await ctx.send("Я і так не в голосовому каналі.")
+            await ctx.send("😅 Я і так не в голосовому каналі.")
 
     @commands.hybrid_command(name="now")
     async def now_playing(self, ctx: commands.Context):
         current = self.current.get(ctx.guild.id)
         if current:
-            await ctx.send(f"Зараз грає: **{current.title}**")
+            await ctx.send(f"🎧 Зараз грає: **{current.title}**")
         else:
-            await ctx.send("Зараз нічого не грає.")
+            await ctx.send("🔇 Зараз нічого не грає.")
 
     @commands.hybrid_command(name="ping")
     async def ping(self, ctx: commands.Context):
-        """Перевірка затримки бота."""
         latency_ms = round(self.bot.latency * 1000)
-        await ctx.send(f"Pong! Latency: {latency_ms} ms")
+        await ctx.send(f"🏓 Pong. Затримка: {latency_ms} мс")
 
 
 class MyBot(commands.Bot):
     async def setup_hook(self):
         await super().setup_hook()
-        # добавляем Cog и синхронизируем дерево (регистрация слэш-команд)
         await self.add_cog(MusicBot(self))
         try:
             await self.tree.sync()
         except Exception:
-            # если синхронизация не удалась — продолжаем без падения
             pass
 
 
@@ -337,7 +330,7 @@ bot = MyBot(command_prefix=BOT_PREFIX, intents=intents)
 
 @bot.event
 async def on_ready():
-    print(f"Увійшов як {bot.user} (ID: {bot.user.id})")
+    print(f"🔌 Увійшов як {bot.user} (ID: {bot.user.id})")
     print("---------")
 
 
@@ -345,8 +338,8 @@ def main():
     token = TOKEN
     if not token:
         raise RuntimeError(
-            "Токен бота не задан. Установите переменную окружения DISCORD_TOKEN "
-            "или заполните файл c:\\Users\\npidv\\Desktop\\DeaglesM\\bot_token.py переменной TOKEN."
+            "❌ Токен бота не задано. Установіть змінну DISCORD_TOKEN "
+            "або заповніть файл bot_token.py."
         )
     bot.run(token)
 
