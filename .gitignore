@@ -17,3 +17,6 @@ venv/
 
 # Логи
 *.log
+
+# Секрет
+bot_token.py
